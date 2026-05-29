@@ -89,30 +89,51 @@ class CarPartDAO:
     def add_part(self, part : CarPart):
         #---------------------------------------------------------------------Questão 2
         query = f"""
-        INSERT INTO parts (id, name, car_model, shelf, level, amount) VALUES (%s, %s, %s, %s, %s, %s);
-        """
+                INSERT INTO parts (id, name, car_model, shelf, level, amount) VALUES (%s, %s, %s, %s, %s, %s);
+                """
         self.cassandra_session.execute(query, (part.id, part.name, part.car_model, part.shelf, part.level, part.amount))
         pass
         
     def get_shelf_parts(self, shelf):
         #---------------------------------------------------------------------Questão 3
         query = f"""
-        SELECT name, car_model, amount FROM parts WHERE shelf = {shelf};
-        """
+                SELECT name, car_model, amount FROM parts WHERE shelf = {shelf};
+                """
         rows = self.cassandra_session.execute(query)
         return list(rows)
     
     def get_car_parts(self, car_model):
         #---------------------------------------------------------------------Questão 4
         query = f"""
-                SELECT name, shelf, level, amount FROM parts WHERE car_model = '{car_model}';
+                SELECT name, shelf, level, amount FROM parts WHERE car_model = '{car_model}' ALLOW FILTERING;
                 """
         rows = self.cassandra_session.execute(query)
         return list(rows)
 
     def get_shelves_stats(self):
         #---------------------------------------------------------------------Questão 5
-        pass
+        query = f"""
+                SELECT shelf, amount FROM parts;
+                """
+        rows = self.cassandra_session.execute(query)
+        shelves = {}
+        for row in rows:
+            shelf = row['shelf']
+            amount = row['amount']
+            if shelf not in shelves:
+                shelves[shelf] = []
+            shelves[shelf].append(amount)
+
+        result = []
+
+        for shelf, amounts in shelves.items():
+            result.append({
+            "shelf": shelf,
+            "min_amount": min(amounts),
+            "max_amount": max(amounts),
+            "average_amount": int(sum(amounts) / len(amounts))
+            })
+        return result
 
 
 
